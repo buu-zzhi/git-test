@@ -1,1 +1,3 @@
 com\example\gittest\GitTestApplicationTests.class
+com\example\gittest\CalculateUtilsTest.class
+com\example\gittest\TestControllerIntegrationTest.class
