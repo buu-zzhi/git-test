@@ -22,5 +22,9 @@ class TestControllerIntegrationTest {
         mockMvc.perform(get("/test"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Hello Springboot"));
+
+        mockMvc.perform(get("/test2"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Hello MySQL"));
     }
 }

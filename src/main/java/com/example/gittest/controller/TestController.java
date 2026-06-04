@@ -10,4 +10,9 @@ public class TestController {
     public String test() {
         return "Hello Springboot";
     }
+
+    @GetMapping("/test2")
+    public String test2() {
+        return "Hello MySQL";
+    }
 }
