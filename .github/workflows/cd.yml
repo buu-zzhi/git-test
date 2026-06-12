@@ -85,9 +85,20 @@ jobs:
             # 登录 GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # 拉取最新镜像
+            # 拉取最新镜像（带重试机制）
             echo "Pulling latest image..."
-            docker pull $IMAGE_NAME
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+            until docker pull $IMAGE_NAME || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "Pull failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+              sleep 10
+            done
+
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "Failed to pull image after $MAX_RETRIES attempts"
+              exit 1
+            fi
 
             # 检查应用容器是否存在
             if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
