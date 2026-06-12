@@ -26,5 +26,9 @@ class TestControllerIntegrationTest {
         mockMvc.perform(get("/test2"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Hello mybatis"));
+
+        mockMvc.perform(get("/test3"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("HPL"));
     }
 }
