@@ -100,6 +100,15 @@ jobs:
               exit 1
             fi
 
+            # 创建 Docker 网络（如果不存在）
+            NETWORK_NAME="git-test-network"
+            if ! docker network ls --format '{{.Name}}' | grep -q "^${NETWORK_NAME}$"; then
+              echo "Creating Docker network ${NETWORK_NAME}..."
+              docker network create $NETWORK_NAME
+            else
+              echo "Docker network ${NETWORK_NAME} already exists"
+            fi
+
             # 检查应用容器是否存在
             if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
               echo "Container ${CONTAINER_NAME} exists, stopping and removing..."
@@ -114,6 +123,7 @@ jobs:
               echo "MySQL container does not exist, creating..."
               docker run -d \
                 --name $MYSQL_CONTAINER_NAME \
+                --network $NETWORK_NAME \
                 --restart unless-stopped \
                 -e MYSQL_ROOT_PASSWORD=mysql \
                 -e MYSQL_DATABASE=gittest \
@@ -131,16 +141,21 @@ jobs:
               sleep 30
             else
               echo "MySQL container already running"
+              # 确保 MySQL 容器在正确的网络中
+              if ! docker inspect $MYSQL_CONTAINER_NAME | grep -q "\"$NETWORK_NAME\""; then
+                echo "Connecting MySQL container to network..."
+                docker network connect $NETWORK_NAME $MYSQL_CONTAINER_NAME
+              fi
             fi
 
             # 启动应用容器
             echo "Starting application container..."
             docker run -d \
               --name $CONTAINER_NAME \
+              --network $NETWORK_NAME \
               --restart unless-stopped \
-              --link $MYSQL_CONTAINER_NAME:mysql \
               -e SERVER_PORT=7070 \
-              -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/gittest?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false" \
+              -e SPRING_DATASOURCE_URL="jdbc:mysql://${MYSQL_CONTAINER_NAME}:3306/gittest?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false" \
               -e SPRING_DATASOURCE_USERNAME=gittest \
               -e SPRING_DATASOURCE_PASSWORD=mysql \
               -e TZ=Asia/Shanghai \
